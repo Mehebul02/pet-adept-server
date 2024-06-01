@@ -37,6 +37,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     const petsCollection = client.db("PetadoptionDB").collection("pets");
     const usersCollection = client.db("PetadoptionDB").collection("users");
+    const adoptCollection = client.db("PetadoptionDB").collection("adopts");
     // jwt related api
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -74,11 +75,23 @@ async function run() {
     });
     // pets relate api
     app.get("/pets", async (req, res) => {
+     
+      
       const category = req.query.category;
       let query = {};
       if (category && category !== "null") {
         query = { category };
       }
+
+      const result = await petsCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.get("/allPets", async (req, res) => {
+      const filter = req.query;
+      // // search
+      const query = {
+        name: { $regex: filter.search,$options:'i' },
+      };
       const result = await petsCollection.find(query).toArray();
       res.send(result);
     });
@@ -86,6 +99,12 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await petsCollection.findOne(query);
+      res.send(result);
+    });
+    // Adopt relate api
+    app.post("/adopts", async (req, res) => {
+      const adopt = req.body;
+      const result = await adoptCollection.insertOne(adopt);
       res.send(result);
     });
     console.log(

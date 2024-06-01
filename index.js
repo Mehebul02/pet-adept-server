@@ -58,7 +58,11 @@ async function run() {
       });
     };
     // user relate api 
-   
+   app.post('/users',async(req,res)=>{
+    const user = req.body
+    const result =await usersCollection.insertOne(user)
+    res.send(result)
+   })
     // pets relate api
     app.get("/pets", async (req, res) => {
       const category = req.query.category;

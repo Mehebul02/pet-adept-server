@@ -3,6 +3,7 @@ const app = express();
 const { MongoClient, ServerApiVersion } = require("mongodb");
 require("dotenv").config();
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 5000;
 
 // middleware
@@ -31,11 +32,12 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     const petsCollection = client.db("PetadoptionDB").collection("pets");
+    const usersCollection = client.db("PetadoptionDB").collection("users");
     // jwt related api
     app.post("/jwt", async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: "1h",
+        expiresIn: "365d",
       });
       res.send({ token });
     });
@@ -55,6 +57,8 @@ async function run() {
         next();
       });
     };
+    // user relate api 
+   
     // pets relate api
     app.get("/pets", async (req, res) => {
       const category = req.query.category;

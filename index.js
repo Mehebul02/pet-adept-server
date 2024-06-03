@@ -38,6 +38,9 @@ async function run() {
     const petsCollection = client.db("PetadoptionDB").collection("pets");
     const usersCollection = client.db("PetadoptionDB").collection("users");
     const adoptCollection = client.db("PetadoptionDB").collection("adopts");
+    const donationCollection = client
+      .db("PetadoptionDB")
+      .collection("donation");
     // jwt related api
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -75,8 +78,6 @@ async function run() {
     });
     // pets relate api
     app.get("/pets", async (req, res) => {
-     
-      
       const category = req.query.category;
       let query = {};
       if (category && category !== "null") {
@@ -90,9 +91,14 @@ async function run() {
       const filter = req.query;
       // // search
       const query = {
-        name: { $regex: filter.search,$options:'i' },
+        name: { $regex: filter.search, $options: "i" },
       };
-      const result = await petsCollection.find(query).toArray();
+      const options = {
+        sort: {
+          date: filter.sort === "asc" ? 1 : -1,
+        },
+      };
+      const result = await petsCollection.find(query, options).toArray();
       res.send(result);
     });
     app.get("/pet/:id", async (req, res) => {
@@ -105,6 +111,18 @@ async function run() {
     app.post("/adopts", async (req, res) => {
       const adopt = req.body;
       const result = await adoptCollection.insertOne(adopt);
+      res.send(result);
+    });
+    // donation relate api
+    app.get("/donation", async (req, res) => {
+      const result = await donationCollection.find().toArray();
+      res.send(result);
+    });
+    // single donation db 
+    app.get("/donation/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await donationCollection.findOne(query);
       res.send(result);
     });
     console.log(

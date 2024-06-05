@@ -20,7 +20,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use(express.static("public"));
+
 // database connect
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.po42dna.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -115,6 +115,42 @@ async function run() {
       const result = await petsCollection.findOne(query);
       res.send(result);
     });
+    // my pets added api database
+    app.get("/pet", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const result = await petsCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.delete("/pets/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await petsCollection.deleteOne(query);
+      res.send(result);
+    });
+    app.patch("/pets/:id", async (req, res) => {
+      const petsItem = req.body;
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+
+      const updatedDoc = {
+        $set: {
+          // image: petsItem.image,
+          // petName: petsItem.name,
+          // age: petsItem.age,
+          // category: petsItem.category,
+          // longDescription: petsItem.longDescription,
+          // shortDescription: petsItem.shortDescription,
+          ...petsItem
+        },
+      };
+      const result = await petsCollection.updateOne(
+        filter,
+        updatedDoc,
+        
+      );
+      res.send(result);
+    });
     // Adopt relate api
     app.post("/adopts", async (req, res) => {
       const adopt = req.body;
@@ -133,13 +169,21 @@ async function run() {
       const result = await donationCollection.findOne(query);
       res.send(result);
     });
-    // create payment 
+    // donation-campaign relate api
+    app.post('/donation-campaign',async(req,res)=>{
+      const  donation = req.body
+      const result = await donationCampaignsCollection.insertOne(donation)
+      res.send(result)
+    })
+    // create payment
     app.post("/create-payment-intent", async (req, res) => {
-      const { price } = req.body;
-      const amount = parseFloat(price * 100);
-      console.log(amount, "inside the intent");
+      const donatedAmount = req.body.donatedAmount;
+      const donateInCent = parseFloat(donatedAmount) * 100;
+      if (!donatedAmount || donateInCent > 1) return;
+      // const amount = parseFloat(price * 100);
+      console.log(donateInCent, "inside the intent");
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: amount,
+        amount: donateInCent,
         currency: "usd",
         payment_method_types: ["card"],
       });
@@ -147,6 +191,20 @@ async function run() {
         clientSecret: paymentIntent.client_secret,
       });
     });
+    // app.post("/payments", async (req, res) => {
+    //   const payment = req.body;
+    //   const paymentResult = await donationCampaignsCollection.insertOne(payment);
+    //   // clear item from the cart
+    //   res.send( paymentResult);
+    // });
+    // app.get("/payments/:email", verifyToken, async (req, res) => {
+    //   const query = { email: req.params.email };
+    //   if (req.params.email !== req.decoded.email) {
+    //     return res.status(403).send({ message: "forbidden access" });
+    //   }
+    //   const result = await donationCampaignsCollection.find(query).toArray();
+    //   res.send(result);
+    // });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );

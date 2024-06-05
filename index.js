@@ -4,6 +4,8 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
 const port = process.env.PORT || 5000;
 
 // middleware
@@ -18,7 +20,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(express.json());
-
+app.use(express.static("public"));
 // database connect
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.po42dna.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -37,7 +39,8 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     const petsCollection = client.db("PetadoptionDB").collection("pets");
     const usersCollection = client.db("PetadoptionDB").collection("users");
-    const adoptCollection = client.db("PetadoptionDB").collection("adopts");
+    const adoptCollection = client.db("PetadoptionDB").collection("adopted");
+    const donationCampaignsCollection = client.db("PetadoptionDB").collection("donationCampaigns");
     const donationCollection = client
       .db("PetadoptionDB")
       .collection("donation");
@@ -77,6 +80,11 @@ async function run() {
       res.send(result);
     });
     // pets relate api
+    app.post("/pets", async (req, res) => {
+      const pets = req.body;
+      const result = await petsCollection.insertOne(pets);
+      res.send(result);
+    });
     app.get("/pets", async (req, res) => {
       const category = req.query.category;
       let query = {};
@@ -118,12 +126,26 @@ async function run() {
       const result = await donationCollection.find().toArray();
       res.send(result);
     });
-    // single donation db 
+    // single donation db
     app.get("/donation/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await donationCollection.findOne(query);
       res.send(result);
+    });
+    // create payment 
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseFloat(price * 100);
+      console.log(amount, "inside the intent");
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
     });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"

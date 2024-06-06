@@ -187,8 +187,8 @@ async function run() {
 
     
     })
-    app.get('/my-donation',async(req,res)=>{
-      const email = req.query.email
+    app.get('/my-donation/:email',async(req,res)=>{
+      const email = req.params.email
       const query ={"donations.email" : email}
       const result = await donationCampaignsCollection.find(query).toArray()
       res.send(result)
@@ -207,6 +207,17 @@ async function run() {
     app.post('/donation-campaign',async(req,res)=>{
       const  donation = req.body
       const result = await donationCampaignsCollection.insertOne(donation)
+      res.send(result)
+    })
+    app.patch('/status-update/:id',async(req,res)=>{
+      const id = req.params.id 
+      const filter ={_id : new ObjectId(id)}
+      const updatedDoc = {
+        $set:{
+          status:'Unpaused'
+        }
+      }
+      const result = await donationCampaignsCollection.updateOne(filter,updatedDoc)
       res.send(result)
     })
     // create payment
@@ -237,6 +248,7 @@ async function run() {
       const donateResult = await donationCampaignsCollection.updateOne(filter,updatedDoc)
       res.send(donateResult)
     })
+
     
     // app.get("/payments/:email", verifyToken, async (req, res) => {
     //   const query = { email: req.params.email };

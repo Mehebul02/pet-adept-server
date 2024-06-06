@@ -41,9 +41,7 @@ async function run() {
     const usersCollection = client.db("PetadoptionDB").collection("users");
     const adoptCollection = client.db("PetadoptionDB").collection("adopted");
     const donationCampaignsCollection = client.db("PetadoptionDB").collection("donationCampaigns");
-    const donationCollection = client
-      .db("PetadoptionDB")
-      .collection("donation");
+    const donationCollection = client.db("PetadoptionDB").collection("donation");
     // jwt related api
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -158,6 +156,7 @@ async function run() {
       res.send(result);
     });
     // donation relate api
+   
     app.get("/donation", async (req, res) => {
       const result = await donationCollection.find().toArray();
       res.send(result);
@@ -169,10 +168,28 @@ async function run() {
       const result = await donationCollection.findOne(query);
       res.send(result);
     });
+    app.delete('/donation-delete',async(req,res)=>{
+      const donation = req.body
+      const query = {
+        _id: {
+          $in: donation.donationId.map((id)=>new ObjectId(id)),
+        },
+      };
+      const result =await donationCampaignsCollection.deleteOne(query)
+      res.send(result)
+    })
     // donation-campaign relate api
+    app.get('/my-campaigns/:email',async(req,res)=>{
+      const email = req.params.email
+      const query = {email : email}
+      const result = await donationCampaignsCollection.find(query).toArray()
+      res.send(result)
+
+    
+    })
     app.get('/my-donation',async(req,res)=>{
       const email = req.query.email
-      const query ={email : email}
+      const query ={"donations.email" : email}
       const result = await donationCampaignsCollection.find(query).toArray()
       res.send(result)
 
@@ -208,17 +225,19 @@ async function run() {
         clientSecret: paymentIntent.client_secret,
       });
     });
-    app.post('/donate',async(req,res)=>{
+    app.patch('/donate/:id',async(req,res)=>{
       const donate = req.body
-      const donateResult = await donationCampaignsCollection.insertOne(donate)
+      const id = req.params.id 
+      const filter ={_id:new ObjectId(id)}
+      const updatedDoc ={
+        $set:{
+          ...donate,
+        }
+      }
+      const donateResult = await donationCampaignsCollection.updateOne(filter,updatedDoc)
       res.send(donateResult)
     })
-    // app.post("/payments", async (req, res) => {
-    //   const payment = req.body;
-    //   const paymentResult = await donationCampaignsCollection.insertOne(payment);
-    //   // clear item from the cart
-    //   res.send( paymentResult);
-    // });
+    
     // app.get("/payments/:email", verifyToken, async (req, res) => {
     //   const query = { email: req.params.email };
     //   if (req.params.email !== req.decoded.email) {

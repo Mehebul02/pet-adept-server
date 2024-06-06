@@ -170,6 +170,23 @@ async function run() {
       res.send(result);
     });
     // donation-campaign relate api
+    app.get('/my-donation',async(req,res)=>{
+      const email = req.query.email
+      const query ={email : email}
+      const result = await donationCampaignsCollection.find(query).toArray()
+      res.send(result)
+
+    })
+    app.get('/donation-campaign',async(req,res)=>{
+      const result =await donationCampaignsCollection.find().toArray()
+      res.send(result)
+    })
+    app.get("/donation-campaign/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await donationCampaignsCollection.findOne(query);
+      res.send(result);
+    });
     app.post('/donation-campaign',async(req,res)=>{
       const  donation = req.body
       const result = await donationCampaignsCollection.insertOne(donation)
@@ -177,13 +194,13 @@ async function run() {
     })
     // create payment
     app.post("/create-payment-intent", async (req, res) => {
-      const donatedAmount = req.body.donatedAmount;
-      const donateInCent = parseFloat(donatedAmount) * 100;
-      if (!donatedAmount || donateInCent > 1) return;
+      const {maximumDonate} = req.body;
+      const amount = parseFloat(maximumDonate * 100) ;
+      // if (!donatedAmount || donateInCent > 1) return;
       // const amount = parseFloat(price * 100);
-      console.log(donateInCent, "inside the intent");
+      console.log(amount, "inside the intent");
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: donateInCent,
+        amount: amount,
         currency: "usd",
         payment_method_types: ["card"],
       });
@@ -191,6 +208,11 @@ async function run() {
         clientSecret: paymentIntent.client_secret,
       });
     });
+    app.post('/donate',async(req,res)=>{
+      const donate = req.body
+      const donateResult = await donationCampaignsCollection.insertOne(donate)
+      res.send(donateResult)
+    })
     // app.post("/payments", async (req, res) => {
     //   const payment = req.body;
     //   const paymentResult = await donationCampaignsCollection.insertOne(payment);

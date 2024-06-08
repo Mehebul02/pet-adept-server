@@ -143,18 +143,23 @@ async function run() {
       const result = await petsCollection.updateOne(filter, updatedDoc);
       res.send(result);
     });
+
+
+
     // Adopt relate api
     app.post("/adopts", async (req, res) => {
       const adopt = req.body;
       const result = await adoptCollection.insertOne(adopt);
       res.send(result);
     });
-    app.get("/my-request-adopts", async (req, res) => {
-      // const email = req.params.email;
-      // const query = { email: email };
-      const result = await adoptCollection.find().toArray()
+    
+    app.get("/my-request-adopts/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await adoptCollection.find(query).toArray()
       res.send(result);
     });
+    // status update 
     app.patch('/adopt/:id',async(req,res)=>{
       const id = req.params.id 
       const status  = req.body

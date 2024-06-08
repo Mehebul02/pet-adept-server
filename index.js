@@ -40,8 +40,12 @@ async function run() {
     const petsCollection = client.db("PetadoptionDB").collection("pets");
     const usersCollection = client.db("PetadoptionDB").collection("users");
     const adoptCollection = client.db("PetadoptionDB").collection("adopted");
-    const donationCampaignsCollection = client.db("PetadoptionDB").collection("donationCampaigns");
-    const donationCollection = client.db("PetadoptionDB").collection("donation");
+    const donationCampaignsCollection = client
+      .db("PetadoptionDB")
+      .collection("donationCampaigns");
+    const donationCollection = client
+      .db("PetadoptionDB")
+      .collection("donation");
     // jwt related api
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -133,20 +137,10 @@ async function run() {
 
       const updatedDoc = {
         $set: {
-          // image: petsItem.image,
-          // petName: petsItem.name,
-          // age: petsItem.age,
-          // category: petsItem.category,
-          // longDescription: petsItem.longDescription,
-          // shortDescription: petsItem.shortDescription,
-          ...petsItem
+          ...petsItem,
         },
       };
-      const result = await petsCollection.updateOne(
-        filter,
-        updatedDoc,
-        
-      );
+      const result = await petsCollection.updateOne(filter, updatedDoc);
       res.send(result);
     });
     // Adopt relate api
@@ -155,8 +149,26 @@ async function run() {
       const result = await adoptCollection.insertOne(adopt);
       res.send(result);
     });
+    app.get("/my-request-adopts", async (req, res) => {
+      // const email = req.params.email;
+      // const query = { email: email };
+      const result = await adoptCollection.find().toArray()
+      res.send(result);
+    });
+    app.patch('/adopt/:id',async(req,res)=>{
+      const id = req.params.id 
+      const status  = req.body
+      const query ={_id : new ObjectId(id)}
+      const updatedDoc={
+        $set:{
+          ...status
+        }
+      }
+      const result = await adoptCollection.updateOne(query,updatedDoc)
+      res.send(result)
+    })
     // donation relate api
-   
+
     app.get("/donation", async (req, res) => {
       const result = await donationCollection.find().toArray();
       res.send(result);
@@ -168,62 +180,62 @@ async function run() {
       const result = await donationCollection.findOne(query);
       res.send(result);
     });
-    app.delete('/donation-delete',async(req,res)=>{
-      const donation = req.body
+    app.delete("/donation-delete", async (req, res) => {
+      const donation = req.body;
       const query = {
         _id: {
-          $in: donation.donationId.map((id)=>new ObjectId(id)),
+          $in: donation.donationId.map((id) => new ObjectId(id)),
         },
       };
-      const result =await donationCampaignsCollection.deleteOne(query)
-      res.send(result)
-    })
+      const result = await donationCampaignsCollection.deleteOne(query);
+      res.send(result);
+    });
     // donation-campaign relate api
-    app.get('/my-campaigns/:email',async(req,res)=>{
-      const email = req.params.email
-      const query = {email : email}
-      const result = await donationCampaignsCollection.find(query).toArray()
-      res.send(result)
-
-    
-    })
-    app.get('/my-donation/:email',async(req,res)=>{
-      const email = req.params.email
-      const query ={"donations.email" : email}
-      const result = await donationCampaignsCollection.find(query).toArray()
-      res.send(result)
-
-    })
-    app.get('/donation-campaign',async(req,res)=>{
-      const result =await donationCampaignsCollection.find().toArray()
-      res.send(result)
-    })
+    app.get("/my-campaigns/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await donationCampaignsCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.get("/my-donation/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { "donations.email": email };
+      const result = await donationCampaignsCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.get("/donation-campaign", async (req, res) => {
+      const result = await donationCampaignsCollection.find().toArray();
+      res.send(result);
+    });
     app.get("/donation-campaign/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await donationCampaignsCollection.findOne(query);
       res.send(result);
     });
-    app.post('/donation-campaign',async(req,res)=>{
-      const  donation = req.body
-      const result = await donationCampaignsCollection.insertOne(donation)
-      res.send(result)
-    })
-    app.patch('/status-update/:id',async(req,res)=>{
-      const id = req.params.id 
-      const filter ={_id : new ObjectId(id)}
+    app.post("/donation-campaign", async (req, res) => {
+      const donation = req.body;
+      const result = await donationCampaignsCollection.insertOne(donation);
+      res.send(result);
+    });
+    app.patch("/status-update/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
-        $set:{
-          status:'Unpaused'
-        }
-      }
-      const result = await donationCampaignsCollection.updateOne(filter,updatedDoc)
-      res.send(result)
-    })
+        $set: {
+          status: "Unpaused",
+        },
+      };
+      const result = await donationCampaignsCollection.updateOne(
+        filter,
+        updatedDoc
+      );
+      res.send(result);
+    });
     // create payment
     app.post("/create-payment-intent", async (req, res) => {
-      const {maximumDonate} = req.body;
-      const amount = parseFloat(maximumDonate * 100) ;
+      const { maximumDonate } = req.body;
+      const amount = parseFloat(maximumDonate * 100);
       // if (!donatedAmount || donateInCent > 1) return;
       // const amount = parseFloat(price * 100);
       console.log(amount, "inside the intent");
@@ -236,20 +248,22 @@ async function run() {
         clientSecret: paymentIntent.client_secret,
       });
     });
-    app.patch('/donate/:id',async(req,res)=>{
-      const donate = req.body
-      const id = req.params.id 
-      const filter ={_id:new ObjectId(id)}
-      const updatedDoc ={
-        $set:{
+    app.patch("/donate/:id", async (req, res) => {
+      const donate = req.body;
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
           ...donate,
-        }
-      }
-      const donateResult = await donationCampaignsCollection.updateOne(filter,updatedDoc)
-      res.send(donateResult)
-    })
+        },
+      };
+      const donateResult = await donationCampaignsCollection.updateOne(
+        filter,
+        updatedDoc
+      );
+      res.send(donateResult);
+    });
 
-    
     // app.get("/payments/:email", verifyToken, async (req, res) => {
     //   const query = { email: req.params.email };
     //   if (req.params.email !== req.decoded.email) {

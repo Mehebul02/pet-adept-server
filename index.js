@@ -248,13 +248,9 @@ async function run() {
       const result = await donationCollection.findOne(query);
       res.send(result);
     });
-    app.delete("/donation-delete", async (req, res) => {
-      const donation = req.body;
-      const query = {
-        _id: {
-          $in: donation.donationId.map((id) => new ObjectId(id)),
-        },
-      };
+    app.delete("/donation-delete/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)}
       const result = await donationCampaignsCollection.deleteOne(query);
       res.send(result);
     });
